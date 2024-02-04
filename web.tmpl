@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <title>sshpiper</title>
+</head>
+
+<body>
+    <!-- fuck too hard to do web ui,  -->
+    <div class="container">
+        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+                <img src="https://avatars.githubusercontent.com/ml/14659?s=50&v=4" />
+                <span class="fs-4">&nbsp;sshpiper</span>
+            </a>
+            <a href="https://github.com/tg123/sshpiper-openpubkey">
+                <svg xmlns="http://www.w3.org/2000/svg" height="32" fill="currentColor" class="bi bi-github"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+            </a>
+        </header>
+
+    </div>
+
+
+    <main class="container">
+        <div class="alert alert-primary" role="alert">
+            <b>ssh opk.sshpiper.com</b> # run from your terminal to test
+        </div>
+        <div class="alert alert-info" role="alert">
+            Check <a href="https://github.com/tg123/sshpiper-openpubkey/tree/main/exmaple/sshd">HERE</a> about how to setup ssh to accept Google Public Key using openpubkey
+        </div>
+        <div class="alert alert-light"> 
+            Edit your target sshd address below, hosts are saved in browser's local storage
+        </div>
+        <!-- <div class="alert alert-danger" role="alert">
+        </div> -->
+        <div class="row">
+            <div class="col-sm-12">
+                <div
+                    class="row g-1 border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative ssh-row">
+
+                    <div class="col p-4 d-flex flex-column position-static">
+                        <div class="input-group has-validation justify-content-end">
+                            <input type="text" class="form-control ssh-host"
+                                placeholder="e.g. user@server.com or 1.2.3.4" required="">
+                            <button class="btn btn-primary ssh-go-btn" disabled><i
+                                    class="bi bi-shift-fill"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="session" value="{{ $.session }}">
+        <div class="modal fade" id="modal" aria-hidden="true" tabindex="-1" data-bs-backdrop="static"
+            data-bs-keyboard="false">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">sshpiper</h1>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert" role="alert">
+                            Loading... you can close this window and check ssh side
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container d-flex justify-content-center">
+            <span class="text-muted"><a href="https://github.com/tg123/sshpiper">sshpiper</a> + <a href="https://github.com/openpubkey/openpubkey">openpubkey</a></span>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script>
+        jQuery(function ($) {
+
+            const session = $('#session').val();
+
+            const modal = new bootstrap.Modal('#modal', {
+                keyboard: false
+            })
+
+            let sshRow;
+            let rowContainer = $('.col-sm-12')
+
+            $('.ssh-host').on('keyup blur', function () {
+                let self = $(this);
+
+                if (self.val() == '' && !self.is(':focus')) {
+                    if (!self.is($('.ssh-host').last())) {
+                        self.parent().parent().parent().hide('slow', function () {
+                            $(this).remove();
+                        });
+                    }
+                }
+
+                self.parent().find('.ssh-go-btn').prop('disabled', self.val().trim() === '' || session === '');
+
+                if ($('.ssh-host').last().val() !== '') {
+                    sshRow.clone(true).appendTo(rowContainer).hide().show('slow');;
+                }
+
+            });
+
+            $('.ssh-host').blur(function () {
+                let value = $('.ssh-host').map(function () { return $(this).val() }).get().join('\n');
+                localStorage.setItem('ssh-hosts', value);
+            });
+
+            $('.ssh-go-btn').on('click', function () {
+                let self = $(this);
+                let host = self.parent().find('.ssh-host').val();
+                if (host) {
+                    modal.show();
+                    $.post('/approve', {
+                        upstream: host,
+                        session: session,
+                    }, function (data) {
+                        if (data.error) {
+                            $('#modal .alert').addClass('alert-danger');
+                            $('#modal .alert').text(data.error);
+
+                            return;
+                        }
+
+                        let check;
+                        let remaining = 60;
+
+                        check = setInterval(function () {
+
+                            if (remaining-- <= 0) {
+                                $('#modal .alert').addClass('alert-danger');
+                                $('#modal .alert').text('Timeout');
+                                clearInterval(check);
+                                return;
+                            }
+
+                            $.get('/lasterr/' + $('#session').val(), function (data) {
+                                if (data.error) {
+                                    $('#modal .alert').addClass('alert-danger');
+                                    $('#modal .alert').text(data.error);
+                                    clearInterval(check);
+                                }
+
+                                if (data.status === 'approved') {
+                                    $('#modal .alert').addClass('alert-success');
+                                    $('#modal .alert').text('Approved, ssh to ' + host);
+                                    clearInterval(check);
+                                }
+                            });
+                        }, 1000);
+                    });
+                }
+
+            })
+
+            sshRow = $('.ssh-row').clone(true);
+
+            let hosts = localStorage.getItem('ssh-hosts');
+            if (hosts) {
+                let hostArr = hosts.split('\n').filter(function (host) {
+                    return host.trim() !== '';
+                })
+
+                if (hostArr.length > 0) {
+                    rowContainer.empty();
+                }
+
+                hostArr.forEach(function (host) {
+                    if (!host) {
+                        return;
+                    }
+                    let row = sshRow.clone(true);
+                    row.find('.ssh-host').val(host);
+                    row.appendTo(rowContainer);
+                });
+
+                $('.ssh-host').blur();
+            }
+        });
+    </script>
+</body>
+
+</html>
