@@ -37,9 +37,10 @@
             <b>ssh opk.sshpiper.com</b> # run from your terminal to test
         </div>
         <div class="alert alert-info" role="alert">
-            Check <a href="https://github.com/tg123/sshpiper-openpubkey/tree/main/exmaple/sshd">HERE</a> about how to setup ssh to accept Google Public Key using openpubkey
+            Check <a href="https://github.com/tg123/sshpiper-openpubkey/tree/main/exmaple/sshd">HERE</a> about how to
+            setup ssh to accept Google Public Key using openpubkey
         </div>
-        <div class="alert alert-light"> 
+        <div class="alert alert-light">
             Edit your target sshd address below, hosts are saved in browser's local storage
         </div>
         <!-- <div class="alert alert-danger" role="alert">
@@ -73,13 +74,17 @@
                             Loading... you can close this window and check ssh side
                         </div>
                     </div>
+                    <div class="modal-footer" hidden>
+                        <a href="/" class="btn btn-primary">Home</a>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container d-flex justify-content-center">
-            <span class="text-muted"><a href="https://github.com/tg123/sshpiper">sshpiper</a> + <a href="https://github.com/openpubkey/openpubkey">openpubkey</a></span>
+            <span class="text-muted"><a href="https://github.com/tg123/sshpiper">sshpiper</a> + <a
+                    href="https://github.com/openpubkey/openpubkey">openpubkey</a></span>
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
@@ -139,12 +144,17 @@
                         let check;
                         let remaining = 60;
 
+                        let final = function () {
+                            clearInterval(check);
+                            $('#modal .modal-footer').removeAttr('hidden');
+                        }
+
                         check = setInterval(function () {
 
                             if (remaining-- <= 0) {
                                 $('#modal .alert').addClass('alert-danger');
                                 $('#modal .alert').text('Timeout');
-                                clearInterval(check);
+                                final();
                                 return;
                             }
 
@@ -152,13 +162,13 @@
                                 if (data.error) {
                                     $('#modal .alert').addClass('alert-danger');
                                     $('#modal .alert').text(data.error);
-                                    clearInterval(check);
+                                    final();
                                 }
 
                                 if (data.status === 'approved') {
                                     $('#modal .alert').addClass('alert-success');
                                     $('#modal .alert').text('Approved, ssh to ' + host);
-                                    clearInterval(check);
+                                    final();
                                 }
                             });
                         }, 1000);
