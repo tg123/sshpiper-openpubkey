@@ -16,7 +16,7 @@ import (
 )
 
 const errMsgPipeApprove = "ok"
-const errMsgBadUpstreamCred = "bad upstream credential"
+const errMsgBadUpstream = "bad upstream"
 
 func main() {
 	gin.DefaultWriter = os.Stderr
@@ -89,31 +89,33 @@ func main() {
 			return &libplugin.SshPiperPluginConfig{
 				KeyboardInteractiveCallback: func(conn libplugin.ConnMetadata, client libplugin.KeyboardInteractiveChallenge) (u *libplugin.Upstream, err error) {
 					session := conn.UniqueID()
+					lasterr := store.GetSshError(session)
+
+					// retry
+					if lasterr != nil {
+
+						if *lasterr != errMsgBadUpstream {
+
+							// retry with no err set, using default err
+							if *lasterr == "" {
+								*lasterr = errMsgBadUpstream
+							}
+
+							_, _ = client("", fmt.Sprintf("connection failed %v", *lasterr), "", false)
+							store.SetSshError(session, errMsgBadUpstream) // set already notified
+						}
+
+						return nil, fmt.Errorf("retry not allowed")
+					}
+
+					// new session
+					store.SetSshError(session, "") // set waiting for approval
 
 					defer func() {
 						if err != nil {
 							store.SetSshError(session, err.Error())
-						} else {
-							store.SetSshError(session, errMsgPipeApprove) // this happens before pipestart, but it's ok because pipestart may timeout due to network issues
 						}
 					}()
-
-					lasterr := store.GetSshError(session)
-
-					if lasterr == nil {
-						// new session
-
-						store.SetSshError(session, "") // set waiting for approval
-					} else if *lasterr != "" {
-
-						// check if retry
-						if *lasterr != errMsgBadUpstreamCred {
-							_, _ = client("", fmt.Sprintf("last err %v", *lasterr), "", false)
-							store.SetSshError(session, errMsgBadUpstreamCred) // set already notified
-						}
-
-						return nil, fmt.Errorf(errMsgBadUpstreamCred)
-					}
 
 					signer, err := util.GenKeyPair(algo)
 					if err != nil {
@@ -153,8 +155,6 @@ func main() {
 							continue
 						}
 
-						// log.Infof("upstream approved %v", upstream)
-
 						token, _ := store.GetSecret(session)
 						if token == nil {
 							return nil, fmt.Errorf("secret expired")
@@ -169,6 +169,8 @@ func main() {
 						if err != nil {
 							return nil, err
 						}
+
+						_, _ = client("", fmt.Sprintf("session approved, connecting to %v", upstream), "", false)
 
 						return &libplugin.Upstream{
 							Host:          host,
